@@ -17,6 +17,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 
 import Colors from "../../constants/Colors";
+import { useCart } from "../../context/CartContext";
 import { RESTAURANTS } from "../../data/restaurants";
 
 type MenuItem = {
@@ -36,6 +37,7 @@ export default function RestaurantScreen() {
   const { id } = useLocalSearchParams();
 
   const [search, setSearch] = useState("");
+  const { items, addItem, updateQty, cartCount, cartTotal } = useCart();
 
   const restaurant = RESTAURANTS.find((item) => item.id === id);
 
@@ -62,6 +64,8 @@ export default function RestaurantScreen() {
   }, [restaurant.menu, search]);
 
   const renderMenuItem = ({ item }: { item: MenuItem }) => {
+    const cartItem = items.find((cartItem) => cartItem.id === item.id);
+
     return (
       <View style={styles.menuItem}>
         <Image
@@ -83,9 +87,42 @@ export default function RestaurantScreen() {
           <Text style={styles.menuPrice}>{item.price.toFixed(2)}€</Text>
         </View>
 
-        <TouchableOpacity style={styles.addButton}>
-          <Ionicons name="add" size={22} color="white" />
-        </TouchableOpacity>
+        {/* RIGHT SIDE */}
+
+        {cartItem ? (
+          <View style={styles.qtyContainer}>
+            <TouchableOpacity
+              style={styles.qtyButton}
+              onPress={() => updateQty(item.id, cartItem.quantity - 1)}
+            >
+              <Ionicons name="remove" size={18} color="white" />
+            </TouchableOpacity>
+
+            <Text style={styles.qtyText}>{cartItem.quantity}</Text>
+
+            <TouchableOpacity
+              style={styles.qtyButton}
+              onPress={() => updateQty(item.id, cartItem.quantity + 1)}
+            >
+              <Ionicons name="add" size={18} color="white" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() =>
+              addItem({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                restaurantId: restaurant.id,
+                restaurantName: restaurant.name,
+              })
+            }
+          >
+            <Ionicons name="add" size={22} color="white" />
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -174,15 +211,17 @@ export default function RestaurantScreen() {
 
       {/* CART BAR */}
 
-      <View style={styles.cartBar}>
-        <Text style={styles.cartText}>2 items</Text>
+      {cartCount > 0 && (
+        <View style={styles.cartBar}>
+          <Text style={styles.cartText}>{cartCount} items</Text>
 
-        <Text style={styles.cartText}>24.00€</Text>
+          <Text style={styles.cartText}>{cartTotal.toFixed(2)}€</Text>
 
-        <TouchableOpacity>
-          <Text style={styles.cartText}>Go to cart</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity onPress={() => router.push("/cart")}>
+            <Text style={styles.cartText}>Go to cart</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -360,5 +399,27 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "700",
+  },
+  qtyContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  qtyButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+
+    backgroundColor: Colors.primary,
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  qtyText: {
+    marginHorizontal: 12,
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.text,
   },
 });
