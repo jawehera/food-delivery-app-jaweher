@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMemo, useState } from "react";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { CATEGORIES } from "../../constants/categories";
 import Colors from "../../constants/Colors";
@@ -52,7 +53,10 @@ export default function HomeScreen() {
   // RENDER RESTAURANT CARD
   const renderRestaurant = ({ item }: { item: Restaurant }) => {
     return (
-      <TouchableOpacity style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push(`/restaurant/${item.id}`)}
+      >
         <Image source={{ uri: item.image }} style={styles.cardImage} />
 
         <View style={styles.cardContent}>

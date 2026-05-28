@@ -18,32 +18,65 @@ export const RESTAURANTS = [
           {
             id: "1-1",
             name: "Bruschetta",
-            description: "Toasted bread, tomatoes, basil",
+            description: "Toasted bread with tomatoes and basil",
             price: 6.5,
+            image:
+              "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f",
           },
           {
             id: "1-2",
             name: "Garlic Bread",
-            description: "Fresh garlic butter bread",
-            price: 5.0,
+            description: "Crispy garlic bread with cheese",
+            price: 5,
+            image:
+              "https://images.unsplash.com/photo-1509440159596-0249088772ff",
           },
         ],
       },
-
       {
         category: "Pizza",
         items: [
           {
             id: "1-3",
             name: "Margherita",
-            description: "Tomato sauce, mozzarella",
-            price: 12.5,
+            description: "Tomato sauce, mozzarella, basil",
+            price: 12,
+            image:
+              "https://images.unsplash.com/photo-1604382355076-af4b0eb60143",
           },
           {
             id: "1-4",
             name: "Pepperoni",
-            description: "Pepperoni and cheese",
-            price: 14.0,
+            description: "Pepperoni, mozzarella cheese",
+            price: 14,
+            image:
+              "https://images.unsplash.com/photo-1628840042765-356cda07504e",
+          },
+        ],
+      },
+      {
+        category: "Desserts",
+        items: [
+          {
+            id: "1-5",
+            name: "Tiramisu",
+            description: "Classic Italian dessert",
+            price: 7,
+            image:
+              "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9",
+          },
+        ],
+      },
+      {
+        category: "Drinks",
+        items: [
+          {
+            id: "1-6",
+            name: "Coca Cola",
+            description: "33cl cold drink",
+            price: 3,
+            image:
+              "https://images.unsplash.com/photo-1622483767028-3f66f32aef97",
           },
         ],
       },
