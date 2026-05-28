@@ -115,8 +115,10 @@ export default function RestaurantScreen() {
                 id: item.id,
                 name: item.name,
                 price: item.price,
+                image: item.image,
                 restaurantId: restaurant.id,
                 restaurantName: restaurant.name,
+                restaurantImage: restaurant.image,
               })
             }
           >

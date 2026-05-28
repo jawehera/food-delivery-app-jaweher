@@ -1,12 +1,15 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { Alert } from "react-native";
 
 type CartItem = {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  image?: string;
   restaurantId: string;
   restaurantName: string;
+  restaurantImage?: string;
 };
 
 type CartContextType = {
@@ -36,6 +39,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (newItem: Omit<CartItem, "quantity">) => {
     setItems((prev) => {
+      // CHECK DIFFERENT RESTAURANT
+
+      if (prev.length > 0 && prev[0].restaurantId !== newItem.restaurantId) {
+        Alert.alert(
+          "Different restaurant",
+          "Your cart contains items from another restaurant. Clear cart and continue?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+
+            {
+              text: "Clear Cart",
+              style: "destructive",
+
+              onPress: () => {
+                setItems([
+                  {
+                    ...newItem,
+                    quantity: 1,
+                  },
+                ]);
+              },
+            },
+          ],
+        );
+
+        return prev;
+      }
+
+      // EXISTING ITEM
+
       const existingItem = prev.find((item) => item.id === newItem.id);
 
       if (existingItem) {
@@ -48,6 +84,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             : item,
         );
       }
+
+      // NEW ITEM
 
       return [
         ...prev,
