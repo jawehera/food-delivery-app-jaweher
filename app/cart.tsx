@@ -1,12 +1,12 @@
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,10 +15,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { router } from "expo-router";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import Colors from "../constants/Colors";
 import { useCart } from "../context/CartContext";
 import { RESTAURANTS } from "../data/restaurants";
+import { Order } from "../types/order";
 
 export default function CartScreen() {
   const { items, updateQty, removeItem, cartTotal, clearCart, restaurantId } =
@@ -35,18 +37,76 @@ export default function CartScreen() {
 
   // PLACE ORDER
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!address.trim()) {
       Alert.alert("Missing address", "Please enter a delivery address");
 
       return;
     }
 
-    Alert.alert("Order placed", "Your order has been successfully placed");
+    try {
+      const newOrder: Order = {
+        id: Date.now().toString(),
 
-    clearCart();
+        restaurantId: restaurant!.id,
+        restaurantName: restaurant!.name,
+        restaurantImage: restaurant?.image,
 
-    router.push("/orders");
+        items: items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+        })),
+
+        subtotal: cartTotal,
+
+        deliveryFee,
+
+        total: grandTotal,
+
+        deliveryAddress: address,
+
+        status: "confirmed",
+
+        rating: null,
+
+        createdAt: new Date().toISOString(),
+      };
+
+      // GET OLD ORDERS
+
+      const existingOrders = await AsyncStorage.getItem("orders");
+
+      const parsedOrders: Order[] = existingOrders
+        ? JSON.parse(existingOrders)
+        : [];
+
+      // ADD NEW ORDER
+
+      parsedOrders.unshift(newOrder);
+
+      // SAVE
+
+      await AsyncStorage.setItem("orders", JSON.stringify(parsedOrders));
+
+      // CLEAR CART
+
+      clearCart();
+
+      // NAVIGATE
+
+      router.push({
+        pathname: "/order-status",
+
+        params: {
+          orderId: newOrder.id,
+        },
+      });
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong");
+    }
   };
 
   // EMPTY CART
