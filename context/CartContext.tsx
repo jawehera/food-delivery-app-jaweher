@@ -7,6 +7,7 @@ type CartItem = {
   price: number;
   quantity: number;
   image?: string;
+
   restaurantId: string;
   restaurantName: string;
   restaurantImage?: string;
@@ -39,7 +40,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (newItem: Omit<CartItem, "quantity">) => {
     setItems((prev) => {
-      // CHECK DIFFERENT RESTAURANT
+      // DIFFERENT RESTAURANT GUARD
 
       if (prev.length > 0 && prev[0].restaurantId !== newItem.restaurantId) {
         Alert.alert(

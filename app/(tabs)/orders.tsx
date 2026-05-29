@@ -22,8 +22,12 @@ import Colors from "../../constants/Colors";
 
 import { Order } from "../../types/order";
 
+import { useCart } from "../../context/CartContext";
+
 export default function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
+
+  const { addItem, clearCart, items, restaurantId } = useCart();
 
   // LOAD ORDERS
 
@@ -51,13 +55,79 @@ export default function OrdersScreen() {
     }
   };
 
-  // RELOAD WHEN SCREEN FOCUSES
+  // RELOAD ON FOCUS
 
   useFocusEffect(
     useCallback(() => {
       loadOrders();
     }, []),
   );
+
+  // REORDER
+
+  const handleReorder = (order: Order) => {
+    // CHECK DIFFERENT RESTAURANT
+
+    if (items.length > 0 && restaurantId !== order.restaurantId) {
+      Alert.alert(
+        "Different restaurant",
+        "Your cart contains items from another restaurant. Clear cart and reorder?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+
+          {
+            text: "Clear Cart",
+            style: "destructive",
+
+            onPress: () => {
+              clearCart();
+
+              order.items.forEach((item) => {
+                for (let i = 0; i < item.quantity; i++) {
+                  addItem({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    image: item.image,
+
+                    restaurantId: order.restaurantId,
+                    restaurantName: order.restaurantName,
+                    restaurantImage: order.restaurantImage,
+                  });
+                }
+              });
+
+              router.push("/cart");
+            },
+          },
+        ],
+      );
+
+      return;
+    }
+
+    // SAME RESTAURANT
+
+    order.items.forEach((item) => {
+      for (let i = 0; i < item.quantity; i++) {
+        addItem({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          image: item.image,
+
+          restaurantId: order.restaurantId,
+          restaurantName: order.restaurantName,
+          restaurantImage: order.restaurantImage,
+        });
+      }
+    });
+
+    router.push("/cart");
+  };
 
   // EMPTY STATE
 
@@ -69,7 +139,7 @@ export default function OrdersScreen() {
         <Text style={styles.emptyTitle}>No orders yet</Text>
 
         <Text style={styles.emptySubtitle}>
-          Your past orders will appear here.
+          Your order history will appear here.
         </Text>
 
         <TouchableOpacity
@@ -82,7 +152,7 @@ export default function OrdersScreen() {
     );
   }
 
-  // RENDER ORDER CARD
+  // RENDER ORDER
 
   const renderOrder = ({ item }: { item: Order }) => {
     const totalItems = item.items.reduce(
@@ -92,7 +162,7 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={styles.orderCard}
         activeOpacity={0.9}
         onPress={() =>
           router.push({
@@ -103,48 +173,48 @@ export default function OrdersScreen() {
           })
         }
       >
-        {/* IMAGE */}
+        {/* TOP */}
 
-        <Image
-          source={{
-            uri:
-              item.restaurantImage ||
-              "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
-          }}
-          style={styles.cardImage}
-        />
-
-        {/* CONTENT */}
-
-        <View style={styles.cardContent}>
-          <View style={styles.rowBetween}>
+        <View style={styles.orderTopRow}>
+          <View style={styles.leftContent}>
             <Text style={styles.restaurantName}>{item.restaurantName}</Text>
 
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{item.status}</Text>
+            <Text style={styles.orderDate}>
+              {new Date(item.createdAt).toLocaleDateString()}
+            </Text>
+
+            {/* STATUS + ITEMS */}
+
+            <View style={styles.metaRow}>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>{item.status}</Text>
+              </View>
+
+              <Text style={styles.itemsText}>{totalItems} items</Text>
             </View>
           </View>
 
-          <Text style={styles.date}>
-            {new Date(item.createdAt).toLocaleDateString()}
-          </Text>
+          {/* IMAGE */}
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoText}>{totalItems} items</Text>
+          <Image
+            source={{
+              uri:
+                item.restaurantImage ||
+                "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
+            }}
+            style={styles.orderImage}
+          />
+        </View>
 
-            <Text style={styles.infoText}>{item.total.toFixed(2)}€</Text>
-          </View>
+        {/* PRICE + BUTTON */}
 
-          {/* REORDER */}
+        <View style={styles.bottomRow}>
+          <Text style={styles.totalPrice}>{item.total.toFixed(2)}€</Text>
 
           <TouchableOpacity
             style={styles.reorderButton}
-            onPress={() => {
-              Alert.alert("Reorder", "We will implement reorder next.");
-            }}
+            onPress={() => handleReorder(item)}
           >
-            <Ionicons name="refresh" size={18} color="white" />
-
             <Text style={styles.reorderText}>Reorder</Text>
           </TouchableOpacity>
         </View>
@@ -154,14 +224,6 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Orders</Text>
-      </View>
-
-      {/* LIST */}
-
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id}
@@ -169,8 +231,14 @@ export default function OrdersScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: 16,
+          paddingTop: 20,
           paddingBottom: 120,
         }}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Order History</Text>
+          </View>
+        }
       />
     </SafeAreaView>
   );
@@ -182,14 +250,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#F7F7F7",
   },
 
+  // HEADER
+
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    marginBottom: 18,
+    alignItems: "center",
   },
 
   headerTitle: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: "700",
     color: Colors.text,
   },
@@ -234,82 +303,98 @@ const styles = StyleSheet.create({
 
   // CARD
 
-  card: {
+  orderCard: {
     backgroundColor: "white",
     borderRadius: 24,
-    overflow: "hidden",
-    marginBottom: 20,
-  },
-
-  cardImage: {
-    width: "100%",
-    height: 180,
-  },
-
-  cardContent: {
     padding: 18,
+    marginBottom: 18,
   },
 
-  rowBetween: {
+  orderTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+  },
+
+  leftContent: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
+
+  orderImage: {
+    width: 82,
+    height: 82,
+    borderRadius: 18,
+    marginLeft: 16,
   },
 
   restaurantName: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "700",
     color: Colors.text,
-    flex: 1,
-    marginRight: 12,
+  },
+
+  orderDate: {
+    marginTop: 6,
+    color: Colors.gray,
+    fontSize: 14,
+  },
+
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 14,
   },
 
   statusBadge: {
-    backgroundColor: "#FFF3EB",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
+    backgroundColor: "#EAFBF0",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
 
   statusText: {
-    color: Colors.primary,
+    color: "#20A35B",
     fontWeight: "700",
+    fontSize: 13,
     textTransform: "capitalize",
   },
 
-  date: {
-    marginTop: 10,
+  itemsText: {
+    marginLeft: 12,
     color: Colors.gray,
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: "500",
   },
 
-  infoRow: {
+  // BOTTOM
+
+  bottomRow: {
+    marginTop: 22,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 16,
+    alignItems: "center",
   },
 
-  infoText: {
-    fontSize: 16,
+  totalPrice: {
+    fontSize: 24,
+    fontWeight: "700",
     color: Colors.text,
-    fontWeight: "600",
   },
 
   reorderButton: {
-    marginTop: 22,
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
 
-    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 10,
   },
 
   reorderText: {
-    color: "white",
-    fontSize: 16,
+    color: Colors.primary,
+    fontSize: 15,
     fontWeight: "700",
   },
 });
