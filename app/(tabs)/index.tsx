@@ -14,10 +14,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMemo, useState } from "react";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
+
 import { router } from "expo-router";
+
 import { StatusBar } from "expo-status-bar";
+
 import { CATEGORIES } from "../../constants/categories";
+
 import Colors from "../../constants/Colors";
+
 import { RESTAURANTS } from "../../data/restaurants";
 
 type Restaurant = {
@@ -34,9 +39,11 @@ type Restaurant = {
 
 export default function HomeScreen() {
   const [search, setSearch] = useState("");
+
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   // FILTERING
+
   const filteredRestaurants = useMemo(() => {
     return RESTAURANTS.filter((restaurant) => {
       const matchesSearch = restaurant.name
@@ -50,11 +57,13 @@ export default function HomeScreen() {
     });
   }, [search, selectedCategory]);
 
-  // RENDER RESTAURANT CARD
+  // RENDER RESTAURANT
+
   const renderRestaurant = ({ item }: { item: Restaurant }) => {
     return (
       <TouchableOpacity
         style={styles.card}
+        activeOpacity={0.9}
         onPress={() => router.push(`/restaurant/${item.id}`)}
       >
         <Image source={{ uri: item.image }} style={styles.cardImage} />
@@ -81,97 +90,98 @@ export default function HomeScreen() {
   return (
     <>
       <StatusBar style="light" />
+
       <SafeAreaView style={styles.container} edges={["top"]}>
-        {/* HEADER */}
-
-        <View style={styles.header}>
-          <View style={styles.locationContainer}>
-            <Ionicons name="location" size={28} color={Colors.primary} />
-
-            <View style={styles.locationTextContainer}>
-              <Text style={styles.deliverText}>Deliver to</Text>
-
-              <Text style={styles.location}>Tunis Centre</Text>
-            </View>
-          </View>
-
-          <View style={styles.notificationButton}>
-            <Ionicons
-              name="notifications-outline"
-              size={24}
-              color={Colors.primary}
-            />
-          </View>
-        </View>
-
-        {/* SEARCH */}
-
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={22} color={Colors.gray} />
-
-          <TextInput
-            placeholder="Search restaurant or cuisine"
-            value={search}
-            onChangeText={setSearch}
-            style={styles.searchInput}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        {/* CATEGORIES */}
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          bounces={false}
-          style={styles.categoriesScroll}
-          contentContainerStyle={styles.categoriesContainer}
-        >
-          {CATEGORIES.map((category) => {
-            const isActive = selectedCategory === category;
-
-            return (
-              <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryPill,
-                  isActive && styles.activeCategoryPill,
-                ]}
-                onPress={() => setSelectedCategory(category)}
-              >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    isActive && styles.activeCategoryText,
-                  ]}
-                >
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* CONTENT */}
-
-        <View style={styles.contentContainer}>
-          {filteredRestaurants.length > 0 ? (
+        <FlatList
+          data={filteredRestaurants}
+          keyExtractor={(item) => item.id}
+          renderItem={renderRestaurant}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: 120,
+            paddingTop: 10,
+          }}
+          ListHeaderComponent={
             <>
-              <Text style={styles.sectionTitle}>Popular Restaurants</Text>
+              {/* HEADER */}
 
-              <FlatList
-                data={filteredRestaurants}
-                style={{ flex: 1 }}
-                keyExtractor={(item) => item.id}
-                renderItem={renderRestaurant}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{
-                  paddingBottom: 0,
-                  flexGrow: 1,
-                }}
-              />
+              <View style={styles.header}>
+                <View style={styles.locationContainer}>
+                  <Ionicons name="location" size={28} color={Colors.primary} />
+
+                  <View style={styles.locationTextContainer}>
+                    <Text style={styles.deliverText}>Deliver to</Text>
+
+                    <Text style={styles.location}>Tunis Centre</Text>
+                  </View>
+                </View>
+
+                <View style={styles.notificationButton}>
+                  <Ionicons
+                    name="notifications-outline"
+                    size={24}
+                    color={Colors.primary}
+                  />
+                </View>
+              </View>
+
+              {/* SEARCH */}
+
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={22} color={Colors.gray} />
+
+                <TextInput
+                  placeholder="Search restaurant or cuisine"
+                  value={search}
+                  onChangeText={setSearch}
+                  style={styles.searchInput}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              {/* CATEGORIES */}
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                style={styles.categoriesScroll}
+                contentContainerStyle={styles.categoriesContainer}
+              >
+                {CATEGORIES.map((category) => {
+                  const isActive = selectedCategory === category;
+
+                  return (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.categoryPill,
+
+                        isActive && styles.activeCategoryPill,
+                      ]}
+                      onPress={() => setSelectedCategory(category)}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryText,
+
+                          isActive && styles.activeCategoryText,
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* TITLE */}
+
+              <Text style={styles.sectionTitle}>Popular Restaurants</Text>
             </>
-          ) : (
+          }
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>🍽️</Text>
 
@@ -181,8 +191,8 @@ export default function HomeScreen() {
                 Try another search or category
               </Text>
             </View>
-          )}
-        </View>
+          }
+        />
       </SafeAreaView>
     </>
   );
@@ -192,15 +202,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 16,
   },
+
+  // HEADER
 
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+
     marginTop: 10,
   },
+
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -226,29 +239,42 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
+
     backgroundColor: "#F3F3F3",
+
     justifyContent: "center",
     alignItems: "center",
   },
 
+  // SEARCH
+
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
+
     backgroundColor: "#F3F3F3",
+
     borderRadius: 16,
+
     paddingHorizontal: 16,
+
     marginTop: 20,
   },
 
   searchInput: {
     flex: 1,
+
     paddingVertical: 14,
     paddingLeft: 10,
+
     fontSize: 16,
     color: Colors.text,
   },
+
+  // CATEGORIES
+
   categoriesScroll: {
-    marginTop: 16,
+    marginTop: 20,
     maxHeight: 60,
   },
 
@@ -259,15 +285,17 @@ const styles = StyleSheet.create({
   categoryPill: {
     width: 100,
     height: 45,
+
     backgroundColor: "#F3F3F3",
+
     borderRadius: 14,
+
     marginRight: 12,
 
     justifyContent: "center",
     alignItems: "center",
-
-    flexShrink: 0,
   },
+
   activeCategoryPill: {
     backgroundColor: Colors.primary,
   },
@@ -282,29 +310,40 @@ const styles = StyleSheet.create({
     color: "white",
   },
 
+  // SECTION
+
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
+
+    marginTop: 24,
     marginBottom: 18,
+
     color: Colors.text,
   },
 
+  // CARD
+
   card: {
     backgroundColor: "white",
-    borderRadius: 18,
+
+    borderRadius: 22,
+
     overflow: "hidden",
-    marginBottom: 18,
+
+    marginBottom: 20,
+
     borderWidth: 1,
     borderColor: Colors.border,
   },
 
   cardImage: {
     width: "100%",
-    height: 180,
+    height: 190,
   },
 
   cardContent: {
-    padding: 14,
+    padding: 16,
   },
 
   rowBetween: {
@@ -317,11 +356,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: Colors.text,
+
+    flex: 1,
+    marginRight: 10,
   },
 
   rating: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   cuisine: {
@@ -332,7 +374,7 @@ const styles = StyleSheet.create({
 
   infoRow: {
     flexDirection: "row",
-    marginTop: 12,
+    marginTop: 14,
     gap: 18,
   },
 
@@ -341,10 +383,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  // EMPTY
+
   emptyContainer: {
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 80,
+
+    paddingTop: 100,
   },
 
   emptyIcon: {
@@ -362,8 +407,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: Colors.gray,
-  },
-  contentContainer: {
-    flex: 1,
   },
 });
