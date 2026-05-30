@@ -1,11 +1,10 @@
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useEffect, useMemo, useState } from "react";
 
+import Modal from "react-native-modal";
 import Colors from "../constants/Colors";
 
 const STEPS = ["Order Confirmed", "Preparing", "Out for Delivery", "Delivered"];
@@ -32,6 +32,10 @@ export default function OrderStatusScreen() {
   const [remainingTime, setRemainingTime] = useState(32);
 
   const [selectedRating, setSelectedRating] = useState(0);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   // LOAD ORDER
 
@@ -89,6 +93,18 @@ export default function OrderStatusScreen() {
     return () => clearInterval(stepInterval);
   }, [order]);
 
+  //Delivered
+
+  useEffect(() => {
+    if (currentStep === 3) {
+      const timeout = setTimeout(() => {
+        setShowRatingModal(true);
+      }, 1000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [currentStep]);
+
   // SAVE RATING
 
   const handleRating = async (rating: number) => {
@@ -111,7 +127,24 @@ export default function OrderStatusScreen() {
 
     await AsyncStorage.setItem("orders", JSON.stringify(updatedOrders));
 
-    Alert.alert("Thank you!", "Rating saved successfully");
+    setShowRatingModal(false);
+
+    setTimeout(() => {
+      showCustomToast("Thank you for your feedback ❤️");
+    }, 250);
+
+    setTimeout(() => {
+      router.replace("/");
+    }, 1700);
+  };
+  const showCustomToast = (message: string) => {
+    setToastMessage(message);
+
+    setShowToast(true);
+
+    setTimeout(() => {
+      setShowToast(false);
+    }, 2500);
   };
 
   const totalItems = useMemo(() => {
@@ -175,55 +208,58 @@ export default function OrderStatusScreen() {
 
         {/* STEPS */}
 
+        {/* STEPS */}
+
         <View style={styles.stepsContainer}>
           {STEPS.map((step, index) => {
             const completed = index < currentStep;
-
             const active = index === currentStep;
 
             return (
-              <View key={step} style={styles.stepRow}>
-                {/* INDICATOR */}
-
-                <View style={styles.indicatorContainer}>
+              <View key={step} style={styles.modernStepRow}>
+                {/* LEFT SIDE */}
+                <View style={styles.timelineContainer}>
                   <View
                     style={[
-                      styles.circle,
-
-                      completed && styles.completedCircle,
-
-                      active && styles.activeCircle,
+                      styles.timelineCircle,
+                      completed && styles.completedTimelineCircle,
+                      active && styles.activeTimelineCircle,
                     ]}
                   >
-                    {completed && (
-                      <Ionicons name="checkmark" size={16} color="white" />
+                    {(completed || active) && (
+                      <Ionicons name="checkmark" size={18} color="white" />
                     )}
                   </View>
 
                   {index !== STEPS.length - 1 && (
                     <View
                       style={[
-                        styles.line,
-
-                        index < currentStep && styles.activeLine,
+                        styles.timelineLine,
+                        index < currentStep && styles.timelineLineActive,
                       ]}
                     />
                   )}
                 </View>
 
-                {/* TEXT */}
+                {/* RIGHT SIDE */}
+                <View style={styles.stepContent}>
+                  <Text
+                    style={[
+                      styles.modernStepTitle,
+                      completed && styles.completedStepTitle,
+                      active && styles.activeStepTitle,
+                    ]}
+                  >
+                    {step}
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.stepText,
-
-                    active && styles.activeText,
-
-                    completed && styles.completedText,
-                  ]}
-                >
-                  {step}
-                </Text>
+                  <Text style={styles.stepDescription}>
+                    {index === 0 && "Your order has been confirmed"}
+                    {index === 1 && "The restaurant is preparing your food"}
+                    {index === 2 && "Your order is on the way"}
+                    {index === 3 && "Enjoy your meal"}
+                  </Text>
+                </View>
               </View>
             );
           })}
@@ -231,23 +267,61 @@ export default function OrderStatusScreen() {
 
         {/* DELIVERED */}
 
-        {currentStep === 3 && (
-          <View style={styles.deliveredCard}>
-            <Text style={styles.deliveredTitle}>Your order has arrived!</Text>
+        <Modal
+          isVisible={showRatingModal}
+          onBackdropPress={() => setShowRatingModal(false)}
+          swipeDirection="down"
+          onSwipeComplete={() => setShowRatingModal(false)}
+          style={styles.ratingModal}
+        >
+          <View style={styles.ratingModalContent}>
+            <View style={styles.dragHandle} />
 
-            <Text style={styles.ratingLabel}>Rate your experience</Text>
+            <Text style={styles.ratingTitle}>Order Delivered 🎉</Text>
+
+            <Image
+              source={require("../assets/images/delivery-success.png")}
+              style={styles.deliverySuccessImage}
+              resizeMode="contain"
+            />
+
+            <Text style={styles.ratingSubtitle}>Your order has arrived!</Text>
+
+            <Text style={styles.ratingQuestion}>How was your experience?</Text>
 
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => handleRating(star)}>
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setSelectedRating(star)}
+                >
                   <Ionicons
                     name={selectedRating >= star ? "star" : "star-outline"}
-                    size={38}
+                    size={42}
                     color="#FFB800"
                   />
                 </TouchableOpacity>
               ))}
             </View>
+
+            <TouchableOpacity
+              style={styles.submitRatingButton}
+              onPress={() => {
+                if (selectedRating > 0) {
+                  handleRating(selectedRating);
+                }
+              }}
+            >
+              <Text style={styles.submitRatingText}>Submit Rating</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
+        {showToast && (
+          <View style={styles.toast}>
+            <Ionicons name="checkmark-circle" size={20} color="white" />
+
+            <Text style={styles.toastText}>{toastMessage}</Text>
           </View>
         )}
       </ScrollView>
@@ -401,6 +475,78 @@ const styles = StyleSheet.create({
   activeLine: {
     backgroundColor: Colors.primary,
   },
+  modernStepRow: {
+    flexDirection: "row",
+    marginBottom: 30,
+  },
+
+  timelineContainer: {
+    width: 50,
+    alignItems: "center",
+  },
+
+  timelineCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#E2E2E2",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+
+  completedTimelineCircle: {
+    backgroundColor: "#22C55E",
+  },
+
+  activeTimelineCircle: {
+    backgroundColor: "#FF8A00",
+    shadowColor: "#FF8A00",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+
+  timelineLine: {
+    width: 4,
+    flex: 1,
+    backgroundColor: "#E5E5E5",
+    marginTop: 4,
+  },
+
+  timelineLineActive: {
+    backgroundColor: "#22C55E",
+  },
+
+  stepContent: {
+    flex: 1,
+    paddingBottom: 10,
+  },
+
+  modernStepTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#222",
+  },
+
+  completedStepTitle: {
+    color: "#22C55E",
+  },
+
+  activeStepTitle: {
+    color: "#FF8A00",
+  },
+
+  stepDescription: {
+    marginTop: 6,
+    fontSize: 15,
+    color: "#8B8B8B",
+    lineHeight: 22,
+  },
 
   stepText: {
     fontSize: 18,
@@ -447,5 +593,90 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 18,
     gap: 10,
+  },
+  ratingModal: {
+    justifyContent: "flex-end",
+    margin: 0,
+  },
+
+  ratingModalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    alignItems: "center",
+  },
+
+  dragHandle: {
+    width: 60,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#D9D9D9",
+    marginBottom: 20,
+  },
+
+  deliverySuccessImage: {
+    width: 300,
+    height: 200,
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+
+  ratingTitle: {
+    marginTop: 18,
+    fontSize: 26,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+
+  ratingSubtitle: {
+    marginTop: 8,
+    fontSize: 20,
+    fontWeight: "600",
+    color: Colors.text,
+  },
+
+  ratingQuestion: {
+    marginTop: 24,
+    fontSize: 16,
+    color: Colors.gray,
+  },
+
+  submitRatingButton: {
+    width: "100%",
+    marginTop: 30,
+    backgroundColor: Colors.primary,
+    borderRadius: 18,
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+
+  submitRatingText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  toast: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: "#222",
+
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+
+    borderRadius: 20,
+  },
+
+  toastText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });
