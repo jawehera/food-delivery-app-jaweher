@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Modal from "react-native-modal";
 import Colors from "../constants/Colors";
+import { useCart } from "../context/CartContext";
 
 const STEPS = ["Order Confirmed", "Preparing", "Out for Delivery", "Delivered"];
 
@@ -36,6 +37,16 @@ export default function OrderStatusScreen() {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  const { clearCart } = useCart();
+
+  //clear cart
+
+  useEffect(() => {
+    if (order) {
+      clearCart();
+    }
+  }, [order]);
 
   // LOAD ORDER
 
@@ -58,7 +69,7 @@ export default function OrderStatusScreen() {
   // TIMER
 
   useEffect(() => {
-    if (!order) return;
+    if (!order || currentStep === 3) return;
 
     const countdownInterval = setInterval(() => {
       setRemainingTime((prev) => {
@@ -72,7 +83,7 @@ export default function OrderStatusScreen() {
     }, 1000);
 
     return () => clearInterval(countdownInterval);
-  }, [order]);
+  }, [order, currentStep]);
 
   // STEP TRACKER
 

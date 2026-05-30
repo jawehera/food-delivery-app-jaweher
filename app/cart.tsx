@@ -17,6 +17,7 @@ import { router } from "expo-router";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
+import Modal from "react-native-modal";
 import Colors from "../constants/Colors";
 import { useCart } from "../context/CartContext";
 import { RESTAURANTS } from "../data/restaurants";
@@ -27,6 +28,8 @@ export default function CartScreen() {
     useCart();
 
   const [address, setAddress] = useState("Avenue Habib Bourguiba, Tunis");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState("");
 
   const restaurant = RESTAURANTS.find((r) => r.id === restaurantId);
 
@@ -91,19 +94,20 @@ export default function CartScreen() {
 
       await AsyncStorage.setItem("orders", JSON.stringify(parsedOrders));
 
-      // CLEAR CART
-
-      clearCart();
-
       // NAVIGATE
 
-      router.push({
-        pathname: "/order-status",
+      setShowSuccessModal(true);
 
-        params: {
-          orderId: newOrder.id,
-        },
-      });
+      setTimeout(() => {
+        setShowSuccessModal(false);
+
+        router.replace({
+          pathname: "/order-status",
+          params: {
+            orderId: newOrder.id,
+          },
+        });
+      }, 2000);
     } catch (error) {
       Alert.alert("Error", "Something went wrong");
     }
@@ -332,6 +336,22 @@ export default function CartScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <Modal isVisible={showSuccessModal} backdropOpacity={0.5}>
+        <View style={styles.successModal}>
+          <Image
+            source={require("../assets/images/order-confirmed.png")}
+            style={styles.successImage}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.successTitle}>Order Confirmed!</Text>
+
+          <Text style={styles.successSubtitle}>
+            Your order has been placed successfully.
+          </Text>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -752,5 +772,31 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "700",
+  },
+
+  successModal: {
+    backgroundColor: "white",
+    borderRadius: 28,
+    padding: 28,
+    alignItems: "center",
+  },
+
+  successImage: {
+    width: 180,
+    height: 180,
+  },
+
+  successTitle: {
+    marginTop: 10,
+    fontSize: 28,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+
+  successSubtitle: {
+    marginTop: 10,
+    fontSize: 16,
+    color: Colors.gray,
+    textAlign: "center",
   },
 });
