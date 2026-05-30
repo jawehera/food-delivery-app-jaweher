@@ -104,7 +104,7 @@ export default function ProfileScreen() {
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.7,
       allowsEditing: true,
       aspect: [1, 1],
@@ -515,11 +515,19 @@ export default function ProfileScreen() {
       <Modal
         isVisible={editModalVisible}
         onBackdropPress={() => setEditModalVisible(false)}
+        onBackButtonPress={() => setEditModalVisible(false)}
+        onSwipeComplete={() => setEditModalVisible(false)}
+        swipeDirection="down"
+        propagateSwipe
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        backdropTransitionOutTiming={0}
         style={styles.modal}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Edit Profile</Text>
+          <View style={styles.dragIndicator} />
 
+          <Text style={styles.modalTitle}>Edit Profile</Text>
           <TouchableOpacity
             style={styles.modalAvatarContainer}
             onPress={pickImage}
@@ -633,6 +641,14 @@ const styles = StyleSheet.create({
   avatarWrapper: {
     position: "relative",
   },
+  dragIndicator: {
+    width: 60,
+    height: 6,
+    borderRadius: 10,
+    backgroundColor: "#D9D9D9",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
 
   avatar: {
     width: 130,
@@ -731,7 +747,7 @@ const styles = StyleSheet.create({
 
   coverSection: {
     height: 220,
-    backgroundColor: Colors.primary,
+    backgroundColor: "#d67a24",
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     alignItems: "center",
@@ -850,9 +866,19 @@ const styles = StyleSheet.create({
 
   modalContent: {
     backgroundColor: "white",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
+
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+
+    elevation: 10,
   },
 
   modalTitle: {
