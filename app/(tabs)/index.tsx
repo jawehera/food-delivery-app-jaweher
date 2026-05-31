@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useMemo, useState } from "react";
 
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 
 import { router } from "expo-router";
 
@@ -37,10 +37,41 @@ type Restaurant = {
   menu: any[];
 };
 
+const getTimeContext = () => {
+  const hour = new Date().getHours();
+  const minutes = new Date().getMinutes();
+  const timeStr = `${hour}:${minutes.toString().padStart(2, "0")}`;
+
+  if (hour >= 5 && hour < 11)
+    return { label: "PETIT-DÉJEUNER", time: timeStr, bg: "#BA7517" };
+  if (hour >= 11 && hour < 15)
+    return { label: "DÉJEUNER", time: timeStr, bg: "#0F6E56" };
+  if (hour >= 15 && hour < 18)
+    return { label: "EN-CAS", time: timeStr, bg: "#534AB7" };
+  return { label: "DÎNER", time: timeStr, bg: "#993C1D" };
+};
+
+const getGreeting = (label: string) => {
+  switch (label) {
+    case "PETIT-DÉJEUNER":
+      return "Bien commencer la journée ?";
+    case "DÉJEUNER":
+      return "Quoi manger aujourd'hui ?";
+    case "EN-CAS":
+      return "Une petite faim ?";
+    case "DÎNER":
+      return "Que dîne-t-on ce soir ?";
+    default:
+      return "Que souhaitez-vous manger ?";
+  }
+};
+
 export default function HomeScreen() {
   const [search, setSearch] = useState("");
 
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const { label, time, bg } = getTimeContext();
+  const greeting = getGreeting(label);
 
   // FILTERING
 
@@ -106,24 +137,26 @@ export default function HomeScreen() {
             <>
               {/* HEADER */}
 
-              <View style={styles.header}>
-                <View style={styles.locationContainer}>
-                  <Ionicons name="location" size={28} color={Colors.primary} />
-
-                  <View style={styles.locationTextContainer}>
-                    <Text style={styles.deliverText}>Deliver to</Text>
-
-                    <Text style={styles.location}>Tunis Centre</Text>
-                  </View>
+              {/* HEADER */}
+              <View style={[styles.header, { backgroundColor: bg }]}>
+                <View>
+                  <Text style={styles.headerSmall}>
+                    {label} · {time}
+                  </Text>
+                  <Text style={styles.headerTitle}>{greeting}</Text>
                 </View>
 
-                <View style={styles.notificationButton}>
+                <TouchableOpacity
+                  style={styles.notificationButton}
+                  activeOpacity={0.8}
+                >
                   <Ionicons
                     name="notifications-outline"
-                    size={24}
-                    color={Colors.primary}
+                    size={22}
+                    color="#fff"
                   />
-                </View>
+                  <View style={styles.notifDot} />
+                </TouchableOpacity>
               </View>
 
               {/* SEARCH */}
@@ -205,13 +238,47 @@ const styles = StyleSheet.create({
   },
 
   // HEADER
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-
+    backgroundColor: "#0F6E56", // fallback, écrasé dynamiquement
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
     marginTop: 10,
+  },
+  headerSmall: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.65)",
+    letterSpacing: 1,
+    fontWeight: "500",
+  },
+  headerTitle: {
+    marginTop: 4,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+    maxWidth: 240,
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notifDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FAC775",
+    position: "absolute",
+    top: 6,
+    right: 6,
+    borderWidth: 1.5,
+    borderColor: "rgba(0,0,0,0.2)",
   },
 
   locationContainer: {
@@ -233,17 +300,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.text,
     marginTop: 4,
-  },
-
-  notificationButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-
-    backgroundColor: "#F3F3F3",
-
-    justifyContent: "center",
-    alignItems: "center",
   },
 
   // SEARCH

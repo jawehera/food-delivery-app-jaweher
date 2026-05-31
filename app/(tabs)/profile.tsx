@@ -1,5 +1,6 @@
 import {
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +22,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Yup from "yup";
 
 import Modal from "react-native-modal";
-
 import Colors from "../../constants/Colors";
 
 type Profile = {
@@ -111,7 +111,22 @@ export default function ProfileScreen() {
     });
 
     if (!result.canceled) {
-      setAvatar(result.assets[0].uri);
+      const newAvatar = result.assets[0].uri;
+
+      setAvatar(newAvatar);
+
+      if (profile) {
+        const updatedProfile = {
+          ...profile,
+          avatar: newAvatar,
+        };
+
+        setProfile(updatedProfile);
+
+        await AsyncStorage.setItem("profile", JSON.stringify(updatedProfile));
+
+        showCustomToast("Photo updated");
+      }
     }
   };
 
@@ -260,7 +275,7 @@ export default function ProfileScreen() {
                   <Image source={{ uri: avatar }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={68} color="#BDBDBD" />
+                    <Ionicons name="person" size={40} color="#BDBDBD" />
                   </View>
                 )}
 
@@ -449,65 +464,77 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.profileContainer}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* COVER */}
+      <ImageBackground
+        source={require("../../assets/images/profile-bg.png")}
+        style={styles.backgroundImage}
+      />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 40,
+        }}
+      >
+        {/* PROFILE SECTION */}
 
-        <View style={styles.coverSection}>
-          <View style={styles.profileImageWrapper}>
+        <View style={styles.profileSection}>
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={pickImage}
+            activeOpacity={0.9}
+          >
             {profile.avatar ? (
-              <Image
-                source={{ uri: profile.avatar }}
-                style={styles.profileImage}
-              />
+              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
             ) : (
-              <View style={styles.initialsAvatar}>
+              <View style={styles.avatarPlaceholder}>
                 <Text style={styles.initialsText}>{initials}</Text>
               </View>
             )}
-          </View>
-        </View>
 
-        {/* INFO CARD */}
-
-        <View style={styles.profileCard}>
+            <View style={styles.cameraButton}>
+              <Ionicons name="camera" size={18} color="white" />
+            </View>
+          </TouchableOpacity>
           <Text style={styles.profileName}>
             {profile.firstName} {profile.lastName}
           </Text>
 
           <Text style={styles.profileEmail}>{profile.email}</Text>
 
-          <View style={styles.addressRow}>
-            <Ionicons
-              name="location-outline"
-              size={18}
-              color={Colors.primary}
-            />
+          <View style={styles.orangeLine} />
+        </View>
 
-            <Text style={styles.address}>{profile?.address}</Text>
+        {/* ADDRESS CARD */}
+
+        <View style={styles.addressCardModern}>
+          <View style={styles.addressIconContainer}>
+            <Ionicons name="home" size={28} color={Colors.primary} />
           </View>
 
-          {/* ACTIONS */}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.addressTitle}>Delivery Address</Text>
 
-          <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => setEditModalVisible(true)}
-            >
-              <Ionicons name="create-outline" size={20} color="white" />
-
-              <Text style={styles.actionButtonText}>Edit</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleSignOut}
-            >
-              <Ionicons name="log-out-outline" size={20} color="#FF4D4F" />
-
-              <Text style={styles.logoutText}>Sign Out</Text>
-            </TouchableOpacity>
+            <Text style={styles.addressValue}>{profile.address}</Text>
           </View>
         </View>
+
+        {/* EDIT BUTTON */}
+
+        <TouchableOpacity
+          style={styles.editProfileButton}
+          onPress={() => setEditModalVisible(true)}
+        >
+          <Ionicons name="create-outline" size={22} color="white" />
+
+          <Text style={styles.editProfileText}>Edit Profile</Text>
+        </TouchableOpacity>
+
+        {/* SIGN OUT */}
+
+        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+          <Ionicons name="log-out-outline" size={22} color="#FF4D4F" />
+
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* EDIT MODAL */}
@@ -528,6 +555,7 @@ export default function ProfileScreen() {
           <View style={styles.dragIndicator} />
 
           <Text style={styles.modalTitle}>Edit Profile</Text>
+
           <TouchableOpacity
             style={styles.modalAvatarContainer}
             onPress={pickImage}
@@ -578,7 +606,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* TOAST */}
+      {/* Garde ton modal actuel ici */}
 
       {showToast && (
         <View style={styles.toast}>
@@ -595,21 +623,342 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F7FB",
   },
 
+  backgroundImage: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+  },
+  avatarContainer: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  avatarWrapper: {
+    position: "relative",
+  },
+  avatar: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+  },
+  avatarPlaceholder: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "#F1F1F1",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cameraButton: {
+    position: "absolute",
+    right: 4,
+    bottom: 4,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "white",
+  },
+
+  profileAvatarWrapper: {
+    width: 190,
+    height: 190,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  avatarRing: {
+    width: 190,
+    height: 190,
+
+    borderRadius: 95,
+
+    backgroundColor: "#FFFFFF",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  profileAvatar: {
+    width: 168,
+    height: 168,
+
+    borderRadius: 84,
+  },
+
+  initialsAvatar: {
+    width: 168,
+    height: 168,
+
+    borderRadius: 84,
+
+    backgroundColor: "#F4F4F4",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cameraWrapper: {
+    position: "absolute",
+
+    right: 0,
+    bottom: 15,
+
+    width: 74,
+    height: 74,
+
+    borderRadius: 37,
+
+    backgroundColor: "#FFFFFF",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  initialsText: {
+    fontSize: 42,
+    fontWeight: "800",
+    color: Colors.primary,
+  },
+
+  cameraOuterCircle: {
+    position: "absolute",
+
+    right: -6,
+    bottom: 6,
+
+    width: 62,
+    height: 62,
+
+    borderRadius: 31,
+
+    backgroundColor: "white",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+
+    elevation: 8,
+  },
+
+  profileCameraButton: {
+    width: 48,
+    height: 48,
+
+    borderRadius: 24,
+
+    backgroundColor: Colors.primary,
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  profileSection: {
+    alignItems: "center",
+    marginTop: 140,
+  },
+
+  orangeLine: {
+    width: 80,
+    height: 5,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    marginTop: 20,
+  },
+
+  addressCardModern: {
+    backgroundColor: "white",
+
+    marginHorizontal: 20,
+    marginTop: 40,
+
+    borderRadius: 26,
+
+    padding: 20,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+
+    elevation: 4,
+  },
+
+  addressIconContainer: {
+    width: 58,
+    height: 58,
+
+    borderRadius: 29,
+
+    backgroundColor: "#FFF3EB",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginRight: 16,
+  },
+
+  addressTitle: {
+    fontSize: 15,
+    color: Colors.text,
+    fontWeight: "700",
+  },
+
+  addressValue: {
+    marginTop: 4,
+    fontSize: 15,
+    color: Colors.gray,
+  },
+
+  editProfileButton: {
+    backgroundColor: Colors.primary,
+
+    marginHorizontal: 20,
+    marginTop: 28,
+
+    height: 66,
+
+    borderRadius: 22,
+
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  editProfileText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+
+  signOutButton: {
+    backgroundColor: "#FFF1F0",
+
+    marginHorizontal: 20,
+    marginTop: 18,
+
+    height: 66,
+
+    borderRadius: 22,
+
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  signOutText: {
+    color: "#FF4D4F",
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+  profileHeader: {
+    alignItems: "center",
+    paddingTop: 40,
+    paddingHorizontal: 24,
+  },
+
+  profileName: {
+    marginTop: 18,
+    fontSize: 28,
+    fontWeight: "800",
+    color: Colors.text,
+  },
+
+  profileEmail: {
+    marginTop: 8,
+    fontSize: 16,
+    color: Colors.gray,
+  },
+
+  infoCard: {
+    marginTop: 40,
+    marginHorizontal: 20,
+
+    backgroundColor: "white",
+
+    borderRadius: 22,
+
+    padding: 18,
+
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+
+  infoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+
+  infoTitle: {
+    fontSize: 14,
+    color: Colors.gray,
+    marginLeft: 12,
+  },
+
+  infoValue: {
+    marginTop: 4,
+    marginLeft: 12,
+
+    fontSize: 16,
+    color: Colors.text,
+
+    fontWeight: "600",
+  },
+
+  editButton: {
+    marginTop: 24,
+    marginHorizontal: 20,
+
+    backgroundColor: Colors.primary,
+
+    borderRadius: 18,
+
+    height: 60,
+
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  logoutButton: {
+    marginTop: 16,
+    marginHorizontal: 20,
+
+    backgroundColor: "#FFF1F0",
+
+    borderRadius: 18,
+
+    height: 60,
+
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   header: {
     paddingTop: 20,
     paddingHorizontal: 24,
     alignItems: "center",
-  },
-
-  addressRow: {
-    alignItems: "center",
-    marginTop: 14,
-  },
-
-  address: {
-    marginLeft: 6,
-    color: Colors.text,
-    fontSize: 16,
   },
 
   title: {
@@ -633,14 +982,6 @@ const styles = StyleSheet.create({
     padding: 22,
   },
 
-  avatarContainer: {
-    alignItems: "center",
-    marginBottom: 28,
-  },
-
-  avatarWrapper: {
-    position: "relative",
-  },
   dragIndicator: {
     width: 60,
     height: 6,
@@ -648,35 +989,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D9D9D9",
     alignSelf: "center",
     marginBottom: 20,
-  },
-
-  avatar: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-  },
-
-  avatarPlaceholder: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: "#F1F1F1",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  cameraButton: {
-    position: "absolute",
-    right: 4,
-    bottom: 4,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "white",
   },
 
   inputContainer: {
@@ -743,120 +1055,6 @@ const styles = StyleSheet.create({
   profileContainer: {
     flex: 1,
     backgroundColor: "#F6F7FB",
-  },
-
-  coverSection: {
-    height: 220,
-    backgroundColor: "#d67a24",
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-
-  profileImageWrapper: {
-    marginBottom: -50,
-  },
-
-  profileImage: {
-    width: 160,
-    height: 160,
-    borderRadius: 60,
-    borderWidth: 5,
-    borderColor: "white",
-  },
-
-  initialsAvatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  initialsText: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: Colors.primary,
-  },
-
-  profileCard: {
-    backgroundColor: "white",
-    marginHorizontal: 20,
-    marginTop: 70,
-    borderRadius: 30,
-    padding: 24,
-  },
-
-  profileName: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: Colors.text,
-    textAlign: "center",
-  },
-
-  profileEmail: {
-    marginTop: 10,
-    fontSize: 16,
-    color: Colors.gray,
-    textAlign: "center",
-  },
-
-  addressCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 26,
-    backgroundColor: "#FFF3EB",
-    padding: 18,
-    borderRadius: 18,
-  },
-
-  addressText: {
-    marginLeft: 12,
-    color: Colors.text,
-    flex: 1,
-    fontSize: 15,
-  },
-
-  actionsRow: {
-    flexDirection: "row",
-    marginTop: 30,
-    gap: 14,
-  },
-
-  editButton: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    borderRadius: 18,
-    paddingVertical: 16,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-  },
-
-  logoutButton: {
-    flex: 1,
-    backgroundColor: "#FFF1F0",
-    borderRadius: 18,
-    paddingVertical: 16,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-  },
-
-  actionButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  logoutText: {
-    color: "#FF4D4F",
-    fontSize: 16,
-    fontWeight: "700",
   },
 
   modal: {
