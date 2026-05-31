@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,12 +22,19 @@ import Colors from "../../constants/Colors";
 
 import { Order } from "../../types/order";
 
+import { useMemo, useRef } from "react";
 import { useCart } from "../../context/CartContext";
+
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
 export default function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   const { addItem, clearCart, items, restaurantId } = useCart();
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
+
+  const snapPoints = useMemo(() => ["40%", "75%", "100%"], []);
 
   // LOAD ORDERS
 
@@ -163,50 +170,51 @@ export default function OrdersScreen() {
     return (
       <TouchableOpacity
         style={styles.orderCard}
-        activeOpacity={0.9}
-        onPress={() =>
-          router.push({
-            pathname: "/order-details",
-            params: {
-              orderId: item.id,
-            },
-          })
-        }
+        activeOpacity={0.85}
+        onPress={() => {
+          setSelectedOrder(item);
+
+          bottomSheetRef.current?.snapToIndex(0);
+        }}
       >
-        {/* TOP */}
+        {/* TOP ROW */}
 
-        <View style={styles.orderTopRow}>
-          <View style={styles.leftContent}>
-            <Text style={styles.restaurantName}>{item.restaurantName}</Text>
+        <View style={styles.topRow}>
+          <View style={styles.restaurantRow}>
+            <Image
+              source={{
+                uri:
+                  item.restaurantImage ||
+                  "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
+              }}
+              style={styles.orderImage}
+            />
 
-            <Text style={styles.orderDate}>
-              {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.restaurantName}>{item.restaurantName}</Text>
 
-            {/* STATUS + ITEMS */}
-
-            <View style={styles.metaRow}>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>{item.status}</Text>
-              </View>
-
-              <Text style={styles.itemsText}>{totalItems} items</Text>
+              <Text style={styles.orderDate}>
+                {new Date(item.createdAt).toLocaleDateString()}
+              </Text>
             </View>
           </View>
 
-          {/* IMAGE */}
-
-          <Image
-            source={{
-              uri:
-                item.restaurantImage ||
-                "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
-            }}
-            style={styles.orderImage}
-          />
+          <Ionicons name="chevron-forward" size={22} color="#B8B8B8" />
         </View>
 
-        {/* PRICE + BUTTON */}
+        {/* STATUS */}
+
+        <View style={styles.metaRow}>
+          <View style={styles.statusBadge}>
+            <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
+
+            <Text style={styles.statusText}>{item.status}</Text>
+          </View>
+
+          <Text style={styles.itemsText}>{totalItems} items</Text>
+        </View>
+
+        {/* BOTTOM */}
 
         <View style={styles.bottomRow}>
           <Text style={styles.totalPrice}>{item.total.toFixed(2)}€</Text>
@@ -215,6 +223,8 @@ export default function OrdersScreen() {
             style={styles.reorderButton}
             onPress={() => handleReorder(item)}
           >
+            <Ionicons name="refresh" size={16} color={Colors.primary} />
+
             <Text style={styles.reorderText}>Reorder</Text>
           </TouchableOpacity>
         </View>
@@ -236,10 +246,93 @@ export default function OrdersScreen() {
         }}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Order History</Text>
+            <Text style={styles.headerTitle}> Your Orders History</Text>
+
+            <Text style={styles.headerSubtitle}> {orders.length} orders</Text>
           </View>
         }
       />
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+      >
+        {selectedOrder && (
+          <BottomSheetScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              padding: 24,
+              paddingBottom: 80,
+            }}
+          >
+            <Image
+              source={{
+                uri: selectedOrder.restaurantImage,
+              }}
+              style={styles.sheetImage}
+            />
+
+            <Text style={styles.sheetRestaurant}>
+              {selectedOrder.restaurantName}
+            </Text>
+
+            <Text style={styles.sheetDate}>
+              {new Date(selectedOrder.createdAt).toLocaleString()}
+            </Text>
+
+            <View style={styles.sheetDivider} />
+
+            <Text style={styles.sheetSection}>Ordered Items</Text>
+
+            {selectedOrder.items.map((item) => (
+              <View key={item.id} style={styles.sheetItemRow}>
+                <Text style={styles.sheetItemName}>
+                  {item.name} × {item.quantity}
+                </Text>
+
+                <Text style={styles.sheetItemPrice}>
+                  {(item.price * item.quantity).toFixed(2)}€
+                </Text>
+              </View>
+            ))}
+
+            <View style={styles.sheetDivider} />
+
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Subtotal</Text>
+
+              <Text style={styles.priceValue}>
+                {selectedOrder.subtotal.toFixed(2)}€
+              </Text>
+            </View>
+
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Delivery Fee</Text>
+
+              <Text style={styles.priceValue}>
+                {selectedOrder.deliveryFee.toFixed(2)}€
+              </Text>
+            </View>
+
+            <View style={styles.sheetDivider} />
+
+            <Text style={styles.addressTitle}>Delivery Address</Text>
+
+            <Text style={styles.addressText}>
+              {selectedOrder.deliveryAddress}
+            </Text>
+
+            <View style={styles.sheetTotalRow}>
+              <Text style={styles.sheetTotalLabel}>Total</Text>
+
+              <Text style={styles.sheetTotalValue}>
+                {selectedOrder.total.toFixed(2)}€
+              </Text>
+            </View>
+          </BottomSheetScrollView>
+        )}
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -253,8 +346,7 @@ const styles = StyleSheet.create({
   // HEADER
 
   header: {
-    marginBottom: 18,
-    alignItems: "center",
+    marginBottom: 24,
   },
 
   headerTitle: {
@@ -263,6 +355,11 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
 
+  headerSubtitle: {
+    marginTop: 4,
+    fontSize: 15,
+    color: Colors.gray,
+  },
   // EMPTY
 
   emptyContainer: {
@@ -305,9 +402,123 @@ const styles = StyleSheet.create({
 
   orderCard: {
     backgroundColor: "white",
-    borderRadius: 24,
+    borderRadius: 22,
+
     padding: 18,
-    marginBottom: 18,
+    marginBottom: 14,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  restaurantRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+
+  orderImage: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    marginRight: 14,
+  },
+
+  restaurantName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+
+  orderDate: {
+    marginTop: 4,
+    fontSize: 13,
+    color: Colors.gray,
+  },
+
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: "#EAFBF0",
+
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+
+    borderRadius: 12,
+  },
+
+  statusText: {
+    marginLeft: 5,
+
+    color: "#22C55E",
+
+    fontSize: 13,
+    fontWeight: "700",
+
+    textTransform: "capitalize",
+  },
+
+  itemsText: {
+    marginLeft: 12,
+
+    fontSize: 14,
+    color: Colors.gray,
+  },
+
+  ratingRow: {
+    flexDirection: "row",
+    marginTop: 12,
+    gap: 2,
+  },
+
+  bottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+
+    marginTop: 18,
+  },
+
+  totalPrice: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+
+  reorderButton: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: "#FFF7F1",
+
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+
+    borderRadius: 14,
+  },
+
+  reorderText: {
+    marginLeft: 6,
+
+    color: Colors.primary,
+
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   orderTopRow: {
@@ -320,81 +531,114 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  orderImage: {
-    width: 82,
-    height: 82,
-    borderRadius: 18,
-    marginLeft: 16,
+  //Bottom Sheet
+
+  sheetImage: {
+    width: "100%",
+    height: 180,
+
+    borderRadius: 20,
   },
 
-  restaurantName: {
-    fontSize: 21,
-    fontWeight: "700",
-    color: Colors.text,
-  },
+  sheetRestaurant: {
+    marginTop: 16,
 
-  orderDate: {
-    marginTop: 6,
-    color: Colors.gray,
-    fontSize: 14,
-  },
-
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 14,
-  },
-
-  statusBadge: {
-    backgroundColor: "#EAFBF0",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-  },
-
-  statusText: {
-    color: "#20A35B",
-    fontWeight: "700",
-    fontSize: 13,
-    textTransform: "capitalize",
-  },
-
-  itemsText: {
-    marginLeft: 12,
-    color: Colors.gray,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-
-  // BOTTOM
-
-  bottomRow: {
-    marginTop: 22,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  totalPrice: {
     fontSize: 24,
     fontWeight: "700",
+
     color: Colors.text,
   },
 
-  reorderButton: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  sheetDate: {
+    marginTop: 6,
 
-    justifyContent: "center",
-    alignItems: "center",
+    color: Colors.gray,
   },
 
-  reorderText: {
-    color: Colors.primary,
-    fontSize: 15,
+  sheetDivider: {
+    height: 1,
+
+    backgroundColor: "#ECECEC",
+
+    marginVertical: 20,
+  },
+
+  sheetSection: {
+    fontSize: 18,
     fontWeight: "700",
+
+    color: Colors.text,
+
+    marginBottom: 14,
+  },
+
+  sheetItemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+
+    marginBottom: 12,
+  },
+
+  sheetItemName: {
+    fontSize: 16,
+    color: Colors.text,
+  },
+
+  sheetItemPrice: {
+    fontSize: 16,
+    fontWeight: "700",
+
+    color: Colors.primary,
+  },
+
+  addressTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 8,
+  },
+
+  addressText: {
+    fontSize: 16,
+    color: Colors.text,
+    lineHeight: 24,
+    opacity: 0.8,
+  },
+
+  sheetTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+
+    marginTop: 24,
+  },
+
+  sheetTotalLabel: {
+    fontSize: 24,
+    fontWeight: "700",
+
+    color: Colors.text,
+  },
+
+  sheetTotalValue: {
+    fontSize: 26,
+    fontWeight: "700",
+
+    color: Colors.primary,
+  },
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  priceLabel: {
+    fontSize: 16,
+    color: Colors.gray,
+  },
+
+  priceValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.text,
   },
 });

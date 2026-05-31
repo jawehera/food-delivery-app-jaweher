@@ -6,6 +6,7 @@ import "react-native-reanimated";
 import { CartProvider } from "../context/CartContext";
 
 import { useColorScheme } from "@/components/useColorScheme";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -47,20 +48,30 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <CartProvider>
-      <ThemeProvider value={colorScheme === "light" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="restaurant/[id]"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="cart" options={{ headerShown: false }} />
-          <Stack.Screen name="order-status" options={{ headerShown: false }} />
-          <Stack.Screen name="order-details" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      </ThemeProvider>
-    </CartProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <CartProvider>
+        <ThemeProvider
+          value={colorScheme === "light" ? DarkTheme : DefaultTheme}
+        >
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+            <Stack.Screen
+              name="restaurant/[id]"
+              options={{ headerShown: false }}
+            />
+
+            <Stack.Screen name="cart" options={{ headerShown: false }} />
+
+            <Stack.Screen
+              name="order-status"
+              options={{ headerShown: false }}
+            />
+
+            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          </Stack>
+        </ThemeProvider>
+      </CartProvider>
+    </GestureHandlerRootView>
   );
 }
